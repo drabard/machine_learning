@@ -21,16 +21,16 @@ function P = reverseScaling(X, P)
 	P(1) = P(1) - sum(Mod);
 endfunction
 
-function P = gradientDescent(X, Y)
-	Factor = - 0.01 / size(X,2);
-	P = ones(1, size(X,1));
-	DP = ones(size(P));
+function [val, gradient] = costFunction(P, X, Y) 
+	H = P*X;
+	m = size(X, 2);
+	Diff = H - Y;
+	val = (1/2*m)*sum(Diff .* Diff);
 
-	while (sum(abs(DP)) > 0.0001)
-		H = P*X;
-		DP = Factor * ((H - Y)*X');
-		P = P + DP;
-	end
+	gradient = zeros(1, size(X, 1));
+	for i = 1:size(X,1)
+		gradient(i) = 1/m * sum(Diff * X(i,:)');
+	endfor
 endfunction
 
 raw_data = load("input_data");
@@ -38,5 +38,11 @@ Y = raw_data(:,end)'
 X = raw_data(:,1:end-1)';
 
 ScaledX = scaleFeatures(X);
-P = gradientDescent(ScaledX, Y);
+
+options = optimset('GradObj', 'on', 'MaxIter', 100);
+initialP = ones(1, size(ScaledX,1));
+[P, funcVal, exitFlag] = fminunc(@(t)(costFunction(t, ScaledX, Y)), initialP, options);
+
 P = reverseScaling(X, P)
+funcVal
+exitFlag

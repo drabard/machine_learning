@@ -1,38 +1,42 @@
-# Linear regression general script
+function ScaledX = scaleFeatures(X)
+	Means = [];
+	for i = 1:size(X,2)
+		Means = [Means mean(X, 2)];
+	endfor
+
+	Ranges = [];
+	for i = 1:size(X,2)
+		Ranges = [Ranges range(X,2)];
+	endfor
+
+	ScaledX = (X - Means) ./ Ranges;
+	ScaledX = [ones(1, size(ScaledX,2)); ScaledX];
+endfunction
+
+function P = reverseScaling(X, P)
+	Ranges = [1; range(X, 2)];
+	Means = [0; mean(X, 2)];
+	P = P ./ Ranges';
+	Mod = P' .* Means;
+	P(1) = P(1) - sum(Mod);
+endfunction
+
+function P = gradientDescent(X, Y)
+	Factor = - 0.01 / size(X,2);
+	P = ones(1, size(X,1));
+	DP = ones(size(P));
+
+	while (sum(abs(DP)) > 0.0001)
+		H = P*X;
+		DP = Factor * ((H - Y)*X');
+		P = P + DP;
+	end
+endfunction
 
 raw_data = load("input_data");
 Y = raw_data(:,end)'
 X = raw_data(:,1:end-1)';
 
-# Feature scaling
-Means = [];
-for i = 1:size(X,2)
-	Means = [Means mean(X, 2)];
-endfor
-
-Ranges = [];
-for i = 1:size(X,2)
-	Ranges = [Ranges range(X,2)];
-endfor
-
-ScaledX = (X - Means) ./ Ranges;
-ScaledX = [ones(1, size(ScaledX,2)); ScaledX];
-
-# Gradient descent
-Factor = - 0.01 / size(X,2);
-P = ones(1, size(ScaledX,1));
-DP = ones(size(P));
-
-while (sum(abs(DP)) > 0.0001)
-	H = P*ScaledX;
-	DP = Factor * ((H - Y)*ScaledX')
-	P = P + DP;
-end
-
-# Reverse feature scaling
-
-Ranges = [1; range(X, 2)];
-Means = [0; mean(X, 2)];
-P = P ./ Ranges';
-Mod = P' .* Means;
-P(1) = P(1) - sum(Mod)
+ScaledX = scaleFeatures(X);
+P = gradientDescent(ScaledX, Y);
+P = reverseScaling(X, P)
